@@ -14,6 +14,23 @@ To use this library in your own project, simply clone the repository and include
 
 Note that this code was tested exclusively on Intel machines (Coffee Lake and Skylake) so it may not function as intended on other platforms.
 
+### Measuring cache hit threshold
+
+To measure the cache hit threshold on your system, use `threshold_from_flush()`:
+
+```C
+uint8_t dummy;
+uint64_t threshold = threshold_from_flush(&dummy);
+```
+
+### Generating an eviction set
+
+To generate an eviction set for an address in your own address space, simply pass that address to `inflate()`, along with the size of the eviction set, the number of samples when testing it, and the cache hit threshold for your system:
+
+```C
+CacheLineSet *cl_set = inflate(victim, INITIAL_SIZE, SAMPLES, INITIAL_THRESHOLD);
+```
+
 ## Guide for future development
 
 This eviction set library contains the beginnings of a Prime+Probe implementation. The next major goal would be to fully implement cross-process Prime+Probe, which would be split into the following stages:

@@ -51,6 +51,20 @@ bool result = reduce2(cl_set, reserve, victim, SAMPLES, threshold, BINS);
 deep_free_cl_set(reserve);
 ```
 
+### Testing eviction sets
+
+To test how well an eviction set evicts a particular victim, use `evict_and_time()`:
+
+```C
+NumList *timings = new_num_list(TRIALS);
+evict_and_time(cl_set, &victim, timings, true);
+
+// Report median and mean times
+print_stats(timings);
+```
+
+This will report the mean, median, and standard deviation access times for the victim address immediately after accessing the eviction set.
+
 ## Guide for future development
 
 This eviction set library contains the beginnings of a Prime+Probe implementation. The next major goal would be to fully implement cross-process Prime+Probe, which would be split into the following stages:

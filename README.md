@@ -11,3 +11,9 @@ Thank you to [Stephan van Schaik](https://codentium.com/about/) for some impleme
 ## Using this library with your own code
 
 To use this library in your own project, simply clone the repository and include `lib/utils.h`. Make sure to specify the correct path depending on where you clone the repository. `test.c` is a simple example which generates an eviction set for a victim variable, minimizes the set, and tests how effectively the set evicts the victim. It can easily be built upon.
+
+## Guide for future development
+
+This eviction set library contains the beginnings of a Prime+Probe implementation. The next major goal would be to fully implement cross-process Prime+Probe, which would be split into the following stages:
+
+1. **Measuring cache traces:** given temporary knowledge of the victim physical address and thus the corresponding cache set, measure the access latency at regular intervals, saving the results to a file.

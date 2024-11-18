@@ -53,11 +53,11 @@ CacheLine *align_to_page(CacheLine *va)
     uintptr_t addr = (uintptr_t)va >> PAGE_OFFSET_BITS;
     addr <<= PAGE_OFFSET_BITS;
 
-    if ((uintptr_t)va != addr)
-    {
-        printf("Tried to free unaligned address!\n");
-        print_cache_line(va);
-    }
+    // if ((uintptr_t)va != addr)
+    // {
+        // printf("Tried to free unaligned address!\n");
+        // print_cache_line(va);
+    // }
 
     return (CacheLine *)addr;
 }

@@ -12,6 +12,8 @@ Thank you to [Stephan van Schaik](https://codentium.com/about/) for some impleme
 
 To use this library in your own project, simply clone the repository and include `lib/utils.h`. Make sure to specify the correct path depending on where you clone the repository. `test.c` is a simple example which generates an eviction set for a victim variable, minimizes the set, and tests how effectively the set evicts the victim. It can easily be built upon.
 
+Note that this code was tested exclusively on Intel machines (Coffee Lake and Skylake) so it may not function as intended on other platforms.
+
 ## Guide for future development
 
 This eviction set library contains the beginnings of a Prime+Probe implementation. The next major goal would be to fully implement cross-process Prime+Probe, which would be split into the following stages:
@@ -19,3 +21,6 @@ This eviction set library contains the beginnings of a Prime+Probe implementatio
 1. **Measuring cache traces:** given temporary knowledge of the victim physical address and thus the corresponding cache set, measure the access latency at regular intervals, saving the results to a file.
 2. **Generating all probe sets:** given the number of unknown physical address bits, generate this many unique eviction sets (sets that don't evict each other) and minimize them.
 3. **Comparing measured trace to saved trace**: while the victim is running, measure the access latency of each eviction set at regular intervals, comparing the measurements with the results saved in part 1.
+4. **Evicting the victim:** once the correct eviction set has been determined, access it as fast as possible to ensure the victim is evicted.
+
+Stage 2 is already been mostly implemented in `generate_sets()`, and stage 4 can just use `access_set()`. Thus, the bulk of the work in converting the existing code into a practical Prime+Probe implementation lies in measuring and comparing cache traces.

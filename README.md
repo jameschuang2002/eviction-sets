@@ -17,3 +17,5 @@ To use this library in your own project, simply clone the repository and include
 This eviction set library contains the beginnings of a Prime+Probe implementation. The next major goal would be to fully implement cross-process Prime+Probe, which would be split into the following stages:
 
 1. **Measuring cache traces:** given temporary knowledge of the victim physical address and thus the corresponding cache set, measure the access latency at regular intervals, saving the results to a file.
+2. **Generating all probe sets:** given the number of unknown physical address bits, generate this many unique eviction sets (sets that don't evict each other) and minimize them.
+3. **Comparing measured trace to saved trace**: while the victim is running, measure the access latency of each eviction set at regular intervals, comparing the measurements with the results saved in part 1.

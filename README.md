@@ -12,7 +12,7 @@ Thank you to [Stephan van Schaik](https://codentium.com/about/) for some impleme
 
 To use this library in your own project, simply clone the repository and include `lib/utils.h`. Make sure to specify the correct path depending on where you clone the repository. `test.c` is a simple example which generates an eviction set for a victim variable, minimizes the set, and tests how effectively the set evicts the victim. It can easily be built upon.
 
-Note that this code was tested exclusively on Intel machines (Coffee Lake and Skylake) so it may not function as intended on other platforms.
+Note that this code is only intended to work on Intel machines running Linux. It was exclusively tested on Intel Coffee Lake and Skylake architectures on Ubuntu 22.04 LTS.
 
 ### Measuring cache hit threshold
 

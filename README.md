@@ -8,6 +8,10 @@ This code can be used as a foundation to carry out cross-process Prime+Probe att
 
 Thank you to [Stephan van Schaik](https://codentium.com/about/) for some implementation details of the reduction algorithm.
 
+## Example
+
+To see a simple example which generates a large eviction set for a variable, then reduces it to its minimal core, and finally measures the eviction rate, run `./test.sh`.
+
 ## Using this library with your own code
 
 To use this library in your own project, simply clone the repository and include `lib/utils.h`. Make sure to specify the correct path depending on where you clone the repository. `test.c` is a simple example which generates an eviction set for a victim variable, minimizes the set, and tests how effectively the set evicts the victim. It can easily be built upon.

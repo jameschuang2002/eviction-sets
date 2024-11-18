@@ -1,3 +1,10 @@
+/*
+Note: the functions in this file were adapted from this wonderful repository:
+
+https://github.com/cirosantilli/linux-kernel-module-cheat/blob/873737bd1fc6e5ee0378f21e9df1c52e3f61e3fb/userland/virt_to_phys_user.c
+*/
+
+
 #define _GNU_SOURCE
 
 #include <fcntl.h> /* open */

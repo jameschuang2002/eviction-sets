@@ -18,6 +18,10 @@ To use this library in your own project, simply clone the repository and include
 
 Note that this code is only intended to work on Intel machines running Linux. It was exclusively tested on Intel Coffee Lake and Skylake architectures on Ubuntu 22.04 LTS.
 
+### `CacheLineSet` vs `EvictionSet`
+
+In this library, a `CacheLineSet *` points to a struct with a size and a linear list of `CacheLine *`s. In contract an `EvictionSet *` uses an intrusive linked-list implementation, allowing you to traverse an eviction set without accessing irrelevant cache lines in the process.
+
 ### Measuring cache hit threshold
 
 To measure the cache hit threshold on your system, use `threshold_from_flush()`:
@@ -42,6 +46,15 @@ To generate a minimal eviction set directly (without having to later reduce it),
 ```C
 uint8_t victim;
 EvictionSet *es = generate_set(&victim);
+```
+
+### Traversing an eviction set
+
+Eviction sets can be traversed with `access_set()`:
+
+```C
+EvictionSet *es = new_eviction_set(cl_set);
+access_set(es);
 ```
 
 

@@ -23,12 +23,32 @@ uint8_t dummy;
 uint64_t threshold = threshold_from_flush(&dummy);
 ```
 
-### Generating an eviction set
+### Generating an eviction set (not minimal)
 
 To generate an eviction set for an address in your own address space, simply pass that address to `inflate()`, along with the size of the eviction set, the number of samples when testing it, and the cache hit threshold for your system:
 
 ```C
-CacheLineSet *cl_set = inflate(victim, INITIAL_SIZE, SAMPLES, INITIAL_THRESHOLD);
+CacheLineSet *cl_set = inflate(victim, INITIAL_SIZE, SAMPLES, threshold);
+```
+
+Suggested values would be an initial size of 8192 and 100 samples.
+
+To generate a minimal eviction set directly (without having to later reduce it), use `generate_set()`:
+
+```C
+uint8_t victim;
+EvictionSet *es = generate_set(&victim);
+```
+
+
+### Reducing an eviction set to its minimal core
+
+To reduce a large eviction set to its minimal core (n cache lines for a n-way cache), use `reduce2()`:
+
+```C
+CacheLineSet *reserve = new_cl_set();
+bool result = reduce2(cl_set, reserve, victim, SAMPLES, threshold, BINS);
+deep_free_cl_set(reserve);
 ```
 
 ## Guide for future development

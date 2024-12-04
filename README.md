@@ -8,6 +8,10 @@ This code can be used as a foundation to carry out cross-process Prime+Probe att
 
 Thank you to [Stephan van Schaik](https://codentium.com/about/) for some implementation details of the reduction algorithm.
 
+## Differences from `evsets`
+
+This code builds on [the repo](https://github.com/cgvwzq/evsets) provided by the authors of Theory and Practice of Finding Eviction Sets. Their repo implements functionality for generating and reducing eviction sets, but not a particular address. This code extends their functionality to generate minimal eviction set which evict a given cache line in a particular cache set.
+
 ## Example
 
 To see a simple example which generates a large eviction set for a variable, then reduces it to its minimal core, and finally measures the eviction rate, run `./test.sh`.

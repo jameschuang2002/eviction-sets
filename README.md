@@ -12,9 +12,64 @@ Thank you to [Stephan van Schaik](https://codentium.com/about/) for some impleme
 
 To see a simple example which generates a large eviction set for a variable, then reduces it to its minimal core, and finally measures the eviction rate, run `./test.sh`.
 
+The example is also provided here for clarity.
+
+## Quick start guide
+
+Begin by creating an empty `CacheLineSet`:
+```C
+uint8_t victim = 0x37;
+CacheLineSet *cl_set = new_cl_set();
+```
+Then, compute the cache hit threshold with Flush+Reload:
+```C
+uint64_t threshold = threshold_from_flush(&victim);
+```
+
+Next, generate a minimal eviction set that evicts the victim, using the threshold which was just computed. This function will return false if the reduction fails for any reason.
+
+```C
+if (!get_minimal_set(&victim, &cl_set, threshold))
+{
+    printf("Error. Failed to generate minimal eviction set.\n");
+}
+```
+Finally, ensure that the victim is cached before accessing the eviction set. This means that is the victim was evicted from the cache, it was most likely due to the eviction set we generated.
+```C
+// Bring the victim into the cache
+uint8_t var2 = victim ^ 0xF7;
+
+// Access eviction set
+NumList *timings = new_num_list(TRIALS);
+evict_and_time(cl_set, &victim, timings, true);
+```
+
+This simply prints the timings.
+
+```C
+
+// Report median and mean times
+printf("Timings after accessing eviction set:\n");
+print_stats(timings);
+
+int evictions = 0;
+
+for (int i = 0; i < TRIALS; i++)
+{
+    if (timings->nums[i] > threshold)
+    {
+        evictions++;
+    }
+}
+
+printf("Successfully evicted %u/%u trials.\n", evictions, TRIALS);
+```
+
 ## Using this library with your own code
 
 To use this library in your own project, simply clone the repository and include `lib/utils.h`. Make sure to specify the correct path depending on where you clone the repository. `test.c` is a simple example which generates an eviction set for a victim variable, minimizes the set, and tests how effectively the set evicts the victim. It can easily be built upon.
+
+A basic Makefile is provided which compiles the library with `make`. After compilation, the library binaries are in `bin/utils.o` and `bin/eviction.o`. `make clean` can be used to delete the compiled binaries.
 
 Note that this code is only intended to work on Intel machines running Linux. It was exclusively tested on Intel Coffee Lake and Skylake architectures on Ubuntu 22.04 LTS.
 

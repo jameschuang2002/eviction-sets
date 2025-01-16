@@ -1,5 +1,5 @@
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <x86intrin.h>
 
 #ifndef UTILS_H
@@ -11,7 +11,7 @@
 
 #define PAGE_OFFSET_BITS 12
 #define LINE_OFFSET_BITS 6
-#define CACHE_SET_BITS 10
+#define CACHE_SET_BITS 13
 
 #define PAGE_BYTES (1 << PAGE_OFFSET_BITS)
 #define CACHE_LINE_BYTES (1 << LINE_OFFSET_BITS)
@@ -20,7 +20,10 @@
  * Macros
  *********************************************************************/
 
-#define HALF_CACHE_SET(va) ((((va) >> LINE_OFFSET_BITS) & ((1 << (PAGE_OFFSET_BITS - LINE_OFFSET_BITS)) - 1)) << LINE_OFFSET_BITS)
+#define HALF_CACHE_SET(va)                                                     \
+  ((((va) >> LINE_OFFSET_BITS) &                                               \
+    ((1 << (PAGE_OFFSET_BITS - LINE_OFFSET_BITS)) - 1))                        \
+   << LINE_OFFSET_BITS)
 #define LINE_OFFSET(va) ((va) & ((1 << LINE_OFFSET_BITS) - 1))
 
 #define MAX(x, y) ((x) >= (y) ? (x) : (y))
@@ -30,17 +33,16 @@
  * Ranges and Number Lists
  *********************************************************************/
 
-// Simple abstraction for a range of numbers, including low but not high, i.e. [low, high)
-typedef struct
-{
-    int low;
-    int high;
+// Simple abstraction for a range of numbers, including low but not high, i.e.
+// [low, high)
+typedef struct {
+  int low;
+  int high;
 } Range;
 
-typedef struct
-{
-    Range **ranges;
-    int length;
+typedef struct {
+  Range **ranges;
+  int length;
 } RangeList;
 
 void print_range(Range *r);
@@ -51,11 +53,10 @@ RangeList *new_range_list(void);
 void push_range(RangeList *rl, Range *r);
 void free_range_list(RangeList *rl);
 
-typedef struct
-{
-    uint64_t *nums;
-    int length;
-    int capacity;
+typedef struct {
+  uint64_t *nums;
+  int length;
+  int capacity;
 } NumList;
 
 void print_num_list(NumList *nl);
@@ -73,15 +74,15 @@ uint64_t print_stats(NumList *nl);
  * Indexed Values
  *********************************************************************/
 
-typedef struct
-{
-    int value;
-    int index;
+typedef struct {
+  int value;
+  int index;
 } IndexedValue;
 
 void printTwoLargest(IndexedValue *largest1, IndexedValue *largest2);
 /* Helper function for finding two largest values in an array */
-void findTwoLargest(const int hits[], int size, IndexedValue *largest1, IndexedValue *largest2);
+void findTwoLargest(const int hits[], int size, IndexedValue *largest1,
+                    IndexedValue *largest2);
 
 /*********************************************************************
  * Cache Utilities
@@ -92,5 +93,8 @@ void flush(volatile void *ptr, size_t length);
 
 /* Helper function for measuring the access time of ptr[index] */
 uint64_t time_access(volatile uint8_t *ptr, size_t index);
+
+/* Helper function for getting the n'th bit of value, 0-indexed */
+int get_bit(uint64_t value, int n);
 
 #endif

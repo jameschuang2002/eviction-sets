@@ -45,6 +45,17 @@ int pa_to_set(uintptr_t pa) {
   return (pa >> LINE_OFFSET_BITS) & ((1 << CACHE_SET_BITS) - 1);
 }
 
+int get_i7_2600_slice(uintptr_t pa) {
+  int h2 = get_bit(pa, 31) ^ get_bit(pa, 29) ^ get_bit(pa, 28) ^
+           get_bit(pa, 26) ^ get_bit(pa, 24) ^ get_bit(pa, 23) ^
+           get_bit(pa, 22) ^ get_bit(pa, 21) ^ get_bit(pa, 20) ^
+           get_bit(pa, 19) ^ get_bit(pa, 17);
+  int h1 = get_bit(pa, 31) ^ get_bit(pa, 30) ^ get_bit(pa, 29) ^
+           get_bit(pa, 27) ^ get_bit(pa, 25) ^ get_bit(pa, 23) ^
+           get_bit(pa, 21) ^ get_bit(pa, 19) ^ get_bit(pa, 18);
+  return (h1 << 1) + h2;
+}
+
 CacheLine *align_to_page(CacheLine *va) {
 
   uintptr_t addr = (uintptr_t)va >> PAGE_OFFSET_BITS;
@@ -912,4 +923,29 @@ CacheLineSet **generate_sets(int num_sets, uint8_t *victim_page_offset) {
   deep_free_cl_set(problem_lines);
 
   return probe_sets;
+}
+
+CacheLineSet *get_eviction_set_from_slices(uintptr_t target_pa,
+                                           int associativity) {
+  int target_set = pa_to_set(target_pa);
+  int target_slice = get_i7_2600_slice(target_pa);
+  printf("target_set: %d, target_slice: %d\n", target_set, target_slice);
+
+  CacheLineSet *cl_set = new_cl_set();
+  while (cl_set->size < associativity) {
+    /* allocate address aligned with half cache set bc aligned alloc returns va
+     */
+    uintptr_t victim = 0x83306b20;
+    CacheLine *line = allocate_cache_line((uint8_t *)victim);
+    // printf("%p\n", line);
+    uintptr_t pa = pointer_to_pa(line);
+    int slice = get_i7_2600_slice(pa);
+    int set = pa_to_set(pa);
+    // printf("%lx, %d, %d\n", pa, set, slice);
+    if (set == target_set && slice == target_slice) {
+      printf("found address %p\n", line);
+      push_cache_line(cl_set, line);
+    }
+  }
+  return cl_set;
 }

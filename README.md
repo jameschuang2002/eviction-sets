@@ -151,3 +151,4 @@ This eviction set library contains the beginnings of a Prime+Probe implementatio
 4. **Evicting the victim:** once the correct eviction set has been determined, access it as fast as possible to ensure the victim is evicted.
 
 Stage 2 is already been mostly implemented in `generate_sets()` (finer details of stage 2 are discussed in the comments to `generate_sets()`), and stage 4 can just use `access_set()`. Thus, the bulk of the work in converting the existing code into a practical Prime+Probe implementation lies in measuring and comparing cache traces.
+

@@ -1,6 +1,10 @@
+#include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
+#include "../lib/constants.h"
 #include "../lib/covert.h"
 #include "../lib/eviction.h"
 #include "../lib/utils.h"
@@ -69,14 +73,34 @@ void test_covert_channel(void) {
 }
 
 void test_sliced_evset(void) {
-  uint8_t *target = malloc(sizeof(uint64_t *));
-  uintptr_t pa = pointer_to_pa(target);
+  uint8_t *target = malloc(sizeof(uint8_t *));
   printf("target: %p\n", target);
-  CacheLineSet *cl_set = get_eviction_set_from_slices(pa, 16);
-  EvictionSet *evset = new_eviction_set(cl_set);
-  int time = evict_and_time_once(evset, target);
+  uintptr_t pa = pointer_to_pa(target);
+
+  // map 64 2 MB pages to get 128 candidate lines
+  void *mapping_start = mmap(NULL, EVERGLADES_LLC_SIZE << 4, PROT_READ,
+                             MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+  if (mapping_start == MAP_FAILED) {
+    perror("map");
+    return;
+  }
+
+  printf("memory mapped: %p\n", mapping_start);
+
+  CacheLineSet *cl_set;
+  get_eviction_set_from_slices(pa, 16, &mapping_start, &cl_set);
+
+  for (int i = 0; i < cl_set->size; i++) {
+    printf("%p\n", cl_set->cache_lines[i]);
+  }
+
+  EvictionSet *es = new_eviction_set(cl_set);
+  int time = evict_and_time_once(es, target);
   int threshold = threshold_from_flush(target);
   printf("threshold: %d, evict_time: %d\n", threshold, time);
+  free(target);
+  deep_free_es(es);
+  munmap(mapping_start, EVERGLADES_LLC_SIZE << 4);
 }
 
 void measure_keypress(void) {}

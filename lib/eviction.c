@@ -9,6 +9,7 @@
 #include <x86intrin.h>
 
 #include "address_translation.h"
+#include "constants.h"
 #include "eviction.h"
 #include "utils.h"
 
@@ -41,8 +42,11 @@ uintptr_t pointer_to_pa(void *va) {
 }
 
 // Determine the cache set of a physical address by reading bits [6, 16)
-int pa_to_set(uintptr_t pa) {
-  return (pa >> LINE_OFFSET_BITS) & ((1 << CACHE_SET_BITS) - 1);
+int pa_to_set(uintptr_t pa, int machine) {
+  if (machine == EVERGLADES)
+    return (pa >> LINE_OFFSET_BITS) & ((1 << EVERGLADES_CACHE_SET_BITS) - 1);
+  else
+    return (pa >> LINE_OFFSET_BITS) & ((1 << ACADIA_CACHE_SET_BITS) - 1);
 }
 
 int get_i7_2600_slice(uintptr_t pa) {
@@ -159,7 +163,7 @@ uint64_t threshold_from_flush(uint8_t *victim) {
 void print_cache_line(CacheLine *cl) {
   printf("%12p => ", cl);
   printf("0x%013lx ", pointer_to_pa(cl));
-  printf("{ %u }\n", pa_to_set(pointer_to_pa(cl)));
+  printf("{ %u }\n", pa_to_set(pointer_to_pa(cl), EVERGLADES));
 }
 
 // Allocate an aligned page and initialize it
@@ -732,8 +736,8 @@ int same_cache_set(uint8_t *cl1, uint8_t *cl2, CacheLineSet *cl_set,
 }
 
 bool match_cache_set(uint8_t *cl1, uint8_t *cl2, int num_bits) {
-  int set1 = pa_to_set(pointer_to_pa(cl1));
-  int set2 = pa_to_set(pointer_to_pa(cl2));
+  int set1 = pa_to_set(pointer_to_pa(cl1), EVERGLADES);
+  int set2 = pa_to_set(pointer_to_pa(cl2), EVERGLADES);
 
   for (int i = 0; i < num_bits; i++) {
     if ((set1 & 1) == (set2 & 1)) {
@@ -748,9 +752,9 @@ bool match_cache_set(uint8_t *cl1, uint8_t *cl2, int num_bits) {
 }
 
 bool all_same_cache_set(CacheLineSet *cl_set) {
-  int set = pa_to_set(pointer_to_pa(cl_set->cache_lines[0]));
+  int set = pa_to_set(pointer_to_pa(cl_set->cache_lines[0]), EVERGLADES);
   for (int i = 1; i < cl_set->size; i++) {
-    if (pa_to_set(pointer_to_pa(cl_set->cache_lines[i])) != set) {
+    if (pa_to_set(pointer_to_pa(cl_set->cache_lines[i]), EVERGLADES) != set) {
       return false;
     }
   }
@@ -803,7 +807,7 @@ CacheLineSet **generate_sets(int num_sets, uint8_t *victim_page_offset) {
   // Save physical addresses to makes sure they don't change
   NumList *pas[num_sets];
   for (int i = 0; i < num_sets; i++) {
-    pas[i] = new_num_list(ASSOCIATIVITY);
+    pas[i] = new_num_list(ACADIA_ASSOCIATIVITY);
   }
 
   for (int i = 0; i < probe_sets[0]->size; i++) {
@@ -925,27 +929,39 @@ CacheLineSet **generate_sets(int num_sets, uint8_t *victim_page_offset) {
   return probe_sets;
 }
 
-CacheLineSet *get_eviction_set_from_slices(uintptr_t target_pa,
-                                           int associativity) {
-  int target_set = pa_to_set(target_pa);
+void get_eviction_set_from_slices(uintptr_t target_pa, int associativity,
+                                  void **eviction_mapping_start,
+                                  CacheLineSet **cl_set_ptr) {
+  printf("target_pa: %p\n", (void *)target_pa);
+  int target_set = pa_to_set(target_pa, EVERGLADES);
   int target_slice = get_i7_2600_slice(target_pa);
   printf("target_set: %d, target_slice: %d\n", target_set, target_slice);
 
-  CacheLineSet *cl_set = new_cl_set();
-  while (cl_set->size < associativity) {
-    /* allocate address aligned with half cache set bc aligned alloc returns va
+  *cl_set_ptr = new_cl_set();
+  int llc_elem_index = 0;
+  while ((*cl_set_ptr)->size < associativity && llc_elem_index < 128) {
+    /* allocate address aligned with half cache set bc aligned alloc returns
+    va
      */
-    uintptr_t victim = 0x83306b20;
-    CacheLine *line = allocate_cache_line((uint8_t *)victim);
-    // printf("%p\n", line);
-    uintptr_t pa = pointer_to_pa(line);
+    volatile CacheLine *line =
+        (volatile CacheLine *)(*eviction_mapping_start +
+                               (target_set << LINE_OFFSET_BITS) +
+                               ((1 << EVERGLADES_CACHE_SET_BITS)
+                                << LINE_OFFSET_BITS) *
+                                   llc_elem_index);
+
+    *line; // bring the large page into physical memory
+    uintptr_t pa = 0;
+    virt_to_phys_huge_page(&pa, (uintptr_t)line);
+
     int slice = get_i7_2600_slice(pa);
-    int set = pa_to_set(pa);
-    // printf("%lx, %d, %d\n", pa, set, slice);
+    int set = pa_to_set((uintptr_t)pa, EVERGLADES);
+
     if (set == target_set && slice == target_slice) {
-      printf("found address %p\n", line);
-      push_cache_line(cl_set, line);
+      printf("found address %p, pa: %p, index: %d\n", line, (void *)pa,
+             llc_elem_index);
+      push_cache_line(*cl_set_ptr, (CacheLine *)line);
     }
+    llc_elem_index++;
   }
-  return cl_set;
 }

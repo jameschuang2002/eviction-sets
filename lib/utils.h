@@ -1,20 +1,10 @@
+#include "constants.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <x86intrin.h>
 
 #ifndef UTILS_H
 #define UTILS_H
-
-/*********************************************************************
- * Constants
- *********************************************************************/
-
-#define PAGE_OFFSET_BITS 12
-#define LINE_OFFSET_BITS 6
-#define CACHE_SET_BITS 13
-
-#define PAGE_BYTES (1 << PAGE_OFFSET_BITS)
-#define CACHE_LINE_BYTES (1 << LINE_OFFSET_BITS)
 
 /*********************************************************************
  * Macros

@@ -26,9 +26,7 @@
 // Slicing of the last-level cache on 6-core Coffee Lake
 #define HIGH_MARK 9 / 10
 #define LOW_MARK 1 / 10
-#define ASSOCIATIVITY 12
 
-#define SETS_PER_SLICE (1 << CACHE_SET_BITS)
 // How many bits [6,10] to match between the victim cache set and the cache set
 // of new cache lines
 #define MATCHING_BITS 6
@@ -38,7 +36,7 @@
  *********************************************************************/
 
 uintptr_t pointer_to_pa(void *va);
-int pa_to_set(uintptr_t pa);
+int pa_to_set(uintptr_t pa, int machine);
 
 /*********************************************************************
  * Timing
@@ -123,7 +121,8 @@ int which_set(NumList **results, NumList *known_trace);
  *********************************************************************/
 
 int get_i7_2600_slice(uintptr_t pa);
-CacheLineSet *get_eviction_set_from_slices(uintptr_t target_pa,
-                                           int associativity);
+void get_eviction_set_from_slices(uintptr_t target_pa, int associativity,
+                                  void **eviction_mapping_start,
+                                  CacheLineSet **cl_set_ptr);
 
 #endif

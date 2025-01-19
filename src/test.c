@@ -94,12 +94,19 @@ void test_sliced_evset(void) {
     printf("%p\n", cl_set->cache_lines[i]);
   }
 
-  EvictionSet *es = new_eviction_set(cl_set);
-  int time = evict_and_time_once(es, target);
+  // EvictionSet *es = new_eviction_set(cl_set);
+  *target;
+  for (int i = 0; i < 16; i++) {
+    *cl_set->cache_lines[i];
+  }
+  for (int i = 0; i < 16; i++) {
+    *cl_set->cache_lines[15 - i];
+  }
+  int time = time_load(target);
   int threshold = threshold_from_flush(target);
   printf("threshold: %d, evict_time: %d\n", threshold, time);
   free(target);
-  deep_free_es(es);
+  // deep_free_es(es);
   munmap(mapping_start, EVERGLADES_LLC_SIZE << 4);
 }
 

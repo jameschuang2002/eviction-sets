@@ -958,8 +958,8 @@ void get_eviction_set_from_slices(uintptr_t target_pa, int associativity,
     int set = pa_to_set((uintptr_t)pa, EVERGLADES);
 
     if (set == target_set && slice == target_slice) {
-      printf("found address %p, pa: %p, index: %d\n", line, (void *)pa,
-             llc_elem_index);
+      printf("found address %p, pa: %p, index: %d, set: %d, slice : %d\n", line,
+             (void *)pa, llc_elem_index, set, slice);
       push_cache_line(*cl_set_ptr, (CacheLine *)line);
     }
     llc_elem_index++;

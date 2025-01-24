@@ -120,6 +120,9 @@ int which_set(NumList **results, NumList *known_trace);
  * Slicing Function and Slicing Helper Functions
  *********************************************************************/
 
+/* slicing function from Clementine Maurice 2015 Reverse Engineering Intel
+Last-Level Cache Complex Addressing
+Using Performance Counters */
 int get_i7_2600_slice(uintptr_t pa);
 void get_eviction_set_from_slices(uintptr_t target_pa, int associativity,
                                   void **eviction_mapping_start,

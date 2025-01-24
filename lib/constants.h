@@ -26,9 +26,8 @@
 /*********************************************************************
  * Everglades (Sandy Bridge i7-2600) Constants
  *********************************************************************/
-#define EVERGLADES_CACHE_SET_BITS 13
+#define EVERGLADES_CACHE_SET_BITS 11 // 8192 / 4 = 2048
 #define EVERGLADES_ASSOCIATIVITY 16
 #define EVERGLADES_NUM_SLICES 4
-#define EVERGLADES_SETS_PER_SLICE                                              \
-  (1 << EVERGLADES_CACHE_SET_BITS) / EVERGLADES_NUM_SLICES
+#define EVERGLADES_SETS_PER_SLICE 2048
 #define EVERGLADES_LLC_SIZE 8 * 1024 * 1024

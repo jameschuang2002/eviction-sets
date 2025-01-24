@@ -47,7 +47,7 @@ int main() {
   fclose(pa_file);
 
   while (1) {
-    send(1);
+    volatile uint8_t tmp = *target;
   }
   return 0;
 }

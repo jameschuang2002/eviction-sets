@@ -210,6 +210,12 @@ void deep_free_cl_set(CacheLineSet *cl_set) {
   free(cl_set);
 }
 
+void print_cl_set(CacheLineSet *cl_set) {
+  for (int i = 0; i < cl_set->size; i++) {
+    printf("%p\n", (void *)cl_set->cache_lines[i]);
+  }
+}
+
 // Remove the last cache line from the set of cache lines and return it
 CacheLine *pop_cache_line(CacheLineSet *cl_set) {
   // Get last CacheLine from CacheLineSet and resize list
@@ -964,4 +970,94 @@ void get_eviction_set_from_slices(uintptr_t target_pa, int associativity,
     }
     llc_elem_index++;
   }
+}
+
+void probe(EvictionSet *es, NumList *access_times) {
+  CacheLine *iter = es->head;
+  for (int i = 0; i < es->size; i++) {
+    uint64_t time = time_load((uint8_t *)iter);
+    push_num(access_times, time);
+    iter = iter->next;
+  }
+}
+
+CacheLineSet *hugepage_inflate(void *mmap_start, int size, int set) {
+  CacheLineSet *cl_set = new_cl_set();
+  for (int i = 0; i < size; i++) {
+    CacheLine *line =
+        (CacheLine *)(mmap_start + (set << LINE_OFFSET_BITS) +
+                      ((1 << EVERGLADES_CACHE_SET_BITS) << LINE_OFFSET_BITS) *
+                          i);
+    push_cache_line(cl_set, line);
+  }
+  return cl_set;
+}
+
+EvictionSet **get_all_slices_eviction_sets(void *mmap_start, int set) {
+  CacheLineSet *cl_set =
+      hugepage_inflate(mmap_start, EVERGLADES_ASSOCIATIVITY, set);
+
+  int threshold = threshold_from_flush((uint8_t *)cl_set->cache_lines[0]);
+
+  int i = 0;
+  EvictionSet **es_list = malloc(4 * sizeof(EvictionSet *));
+  for (int i = 0; i < 4; i++) {
+    es_list[i] = malloc(sizeof(EvictionSet));
+  }
+  while (i < cl_set->size) {
+    if (i > 3) {
+      printf("finding sets for all slices failed, please retry\n");
+      break;
+    }
+    printf("cl_set size: %d\n", cl_set->size);
+    print_cl_set(cl_set);
+    CacheLineSet *cl_evset;
+    if (!get_minimal_set((uint8_t *)cl_set->cache_lines[i], &cl_evset,
+                         threshold)) {
+      printf("cannot find eviction set for %p\n",
+             (void *)cl_set->cache_lines[i]);
+      exit(1);
+    }
+    EvictionSet *es = new_eviction_set(cl_evset);
+    NumList *nl = new_num_list(EVERGLADES_ASSOCIATIVITY);
+    int size = 0;
+    for (int j = i + 1; j < cl_set->size; j++) {
+      int time = evict_and_time_once(es, (uint8_t *)cl_set->cache_lines[j]);
+      if (time < threshold) {
+        push_num(nl, j);
+        size++;
+      }
+    }
+    print_num_list(nl);
+
+    CacheLine *new_cache_lines[i + 1 + nl->length];
+
+    for (int j = 0; j < i + 1; j++) {
+      new_cache_lines[j] = cl_set->cache_lines[j];
+    }
+
+    for (int j = 0; j < nl->length; j++) {
+      new_cache_lines[i + j + 1] = cl_set->cache_lines[nl->nums[j]];
+    }
+
+    for (int j = 0; j < i + 1 + nl->length; j++) {
+      cl_set->cache_lines[j] = new_cache_lines[j];
+    }
+
+    cl_set->size = i + 1 + nl->length;
+    es_list[i] = es;
+    i++;
+
+    free_num_list(nl);
+  }
+
+  print_cl_set(cl_set);
+  return es_list;
+}
+
+void free_es_list(EvictionSet **es_list) {
+  for (int i = 0; i < 4; i++) {
+    deep_free_es(es_list[i]);
+  }
+  free(es_list);
 }

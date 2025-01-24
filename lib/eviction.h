@@ -29,7 +29,7 @@
 
 // How many bits [6,10] to match between the victim cache set and the cache set
 // of new cache lines
-#define MATCHING_BITS 6
+#define MATCHING_BITS 11 // 6 for regular pages
 
 /*********************************************************************
  * Address Translation
@@ -65,6 +65,7 @@ typedef struct {
 void print_cache_line(CacheLine *cl);
 CacheLine *allocate_cache_line(uint8_t *victim);
 CacheLineSet *new_cl_set(void);
+void print_cl_set(CacheLineSet *cl_set);
 void push_cache_line(CacheLineSet *cl_set, CacheLine *cl);
 void free_cl_set(CacheLineSet *cl_set);
 void deep_free_cl_set(CacheLineSet *cl_set);
@@ -127,5 +128,10 @@ int get_i7_2600_slice(uintptr_t pa);
 void get_eviction_set_from_slices(uintptr_t target_pa, int associativity,
                                   void **eviction_mapping_start,
                                   CacheLineSet **cl_set_ptr);
+void probe(EvictionSet *es, NumList *access_times);
+CacheLineSet *hugepage_inflate(void *mmap_start, int size, int set);
+EvictionSet **get_all_slices_eviction_sets(void *mmap_start, int set);
+
+void free_es_list(EvictionSet **es_list);
 
 #endif

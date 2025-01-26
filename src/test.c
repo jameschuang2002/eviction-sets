@@ -149,7 +149,7 @@ void test_find_all_eviction_sets(int set) {
 
   for (int i = 0; i < 4; i++) {
     sliced_list_median[i] = new_num_list(16);
-    candidates[i] = 1;
+    candidates[i] = 0;
   }
   for (int j = 0; j < 10; j++) {
     for (int i = 0; i < 4; i++) {
@@ -162,13 +162,14 @@ void test_find_all_eviction_sets(int set) {
       print_num_list(list);
       push_num(sliced_list_median[i], max(list));
       if (max(list) < threshold) {
-        candidates[i] = -1;
+        candidates[i]++;
       }
       clear_num_list(list);
     }
   }
   for (int i = 0; i < 4; i++) {
-    printf("slice %d median: %ld\n", i, median_and_sort(sliced_list_median[i]));
+    printf("slice %d median: %ld, mean: %ld\n", i,
+           median_and_sort(sliced_list_median[i]), mean(sliced_list_median[i]));
     printf("candidate %d: %d\n", i + 1, candidates[i]);
     free_num_list(sliced_list_median[i]);
   }
@@ -182,5 +183,5 @@ int main() {
   // test_covert_channel();
   // test_eviction_and_pp();
   int set = pa_to_set(KBD_KEYCODE_ADDR, EVERGLADES);
-  test_find_all_eviction_sets(set);
+  test_find_all_eviction_sets(31);
 }

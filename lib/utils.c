@@ -142,6 +142,15 @@ uint64_t max(NumList *nl) {
   return nl->nums[max_index];
 }
 
+uint64_t mean(NumList *nl) {
+  uint64_t sum = 0;
+  for (int i = 0; i < nl->length; i++) {
+    sum += nl->nums[i];
+  }
+
+  return sum /= nl->length;
+}
+
 uint64_t print_stats(NumList *nl) {
   uint64_t median = median_and_sort(nl);
   double mean = 0;

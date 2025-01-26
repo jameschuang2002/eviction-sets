@@ -1,7 +1,49 @@
-#Critical 
+# How to launch the attack?
+
+### Setup
+1. If you just restarted / turn on your computer, check if you have huge pages set up 
+
+```
+grep -i huge /proc/meminfo
+```
+
+2. If you do not, set up huge pages 
+
+```echo NUM_PAGES | sudo tee /proc/sys/vm/nr_hugepages```
+
+3. Find the virtual address of kbd_keycode in your system and copy the address to v2p_kernel/v2p.c and replace the value in my_module_init, func_addr
+
+```sudo cat /proc/kallsyms | grep kbd_keycode```
+
+4. Convert the virtual address to physical address using the kernel module
+
+```sudo insmod v2p.ko```
+
+If your system shows a warning referring to certificates not being signed, please go into bios and enter insecure mode 
+
+5. View the physical address 
+```sudo dmesg```
+
+6. Copy the physical address to replace the address in src/test.c KBD_KEYCODE
+
+### Profiling
+
+1. Compile the code 
+
+``` ./compile.sh ```
+
+2. Run the code 
+
+```
+sudo ./bin/test.out
+```
+
+3. Please start typing once the screen shows ready for prime+probe, if you started early, it may cause the eviction search algorithm to fail due to external noise. 
+
+# Critical 
 1. Overlapping bits modified to 12 for huge pages instead of 6 in regualr pages
 
-#Huge Pages
+# Huge Pages
 
 Setting up large pages
 ```echo NUM_PAGES | sudo tee /proc/sys/vm/nr_hugepages```

@@ -58,6 +58,7 @@ uint64_t pop_num(NumList *nl);
 int compare_nums(const void *a, const void *b);
 uint64_t min(NumList *nl);
 uint64_t max(NumList *nl);
+uint64_t mean(NumList *nl);
 uint64_t median_and_sort(NumList *nl);
 uint64_t print_stats(NumList *nl);
 

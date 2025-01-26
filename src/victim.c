@@ -37,7 +37,8 @@ int main() {
   printf("%p\n", (void *)mapping_start);
 
   while (1) {
-    volatile uint8_t tmp = *(volatile uint8_t *)mapping_start;
+    volatile uint8_t tmp =
+        *(volatile uint8_t *)(mapping_start + (31 << LINE_OFFSET_BITS));
   }
   return 0;
 }

@@ -1,4 +1,8 @@
+#Critical 
+1. Overlapping bits modified to 12 for huge pages instead of 6 in regualr pages
+
 #Huge Pages
+
 Setting up large pages
 ```echo NUM_PAGES | sudo tee /proc/sys/vm/nr_hugepages```
 

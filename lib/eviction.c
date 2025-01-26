@@ -1005,10 +1005,11 @@ EvictionSet **get_all_slices_eviction_sets(void *mmap_start, int set) {
     es_list[i] = malloc(sizeof(EvictionSet));
   }
   while (i < cl_set->size) {
-    if (i > 3) {
+    if (i >= EVERGLADES_NUM_SLICES) {
       printf("finding sets for all slices failed, please retry\n");
       break;
     }
+
     printf("cl_set size: %d\n", cl_set->size);
     print_cl_set(cl_set);
     CacheLineSet *cl_evset;

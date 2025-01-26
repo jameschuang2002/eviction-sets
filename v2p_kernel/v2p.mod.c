@@ -37,8 +37,8 @@ static const char ____versions[]
 __used __section("__versions") =
 	"\x14\x00\x00\x00\xbb\x6d\xfb\xbd"
 	"__fentry__\0\0"
-	"\x14\x00\x00\x00\xb0\x28\x9d\x4c"
-	"phys_base\0\0\0"
+	"\x1c\x00\x00\x00\x5e\xd7\xd8\x7c"
+	"page_offset_base\0\0\0\0"
 	"\x18\x00\x00\x00\x6c\x1e\x65\x97"
 	"vmemmap_base\0\0\0\0"
 	"\x10\x00\x00\x00\x7e\x3a\x2c\x12"
@@ -52,4 +52,4 @@ __used __section("__versions") =
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "8EECD5DFA6E60F5214A7E54");
+MODULE_INFO(srcversion, "14387621C132E7D8CDF6F14");

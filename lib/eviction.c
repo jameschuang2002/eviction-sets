@@ -50,13 +50,32 @@ int pa_to_set(uintptr_t pa, int machine) {
 }
 
 int get_i7_2600_slice(uintptr_t pa) {
-  int h2 = get_bit(pa, 31) ^ get_bit(pa, 29) ^ get_bit(pa, 28) ^
-           get_bit(pa, 26) ^ get_bit(pa, 24) ^ get_bit(pa, 23) ^
-           get_bit(pa, 22) ^ get_bit(pa, 21) ^ get_bit(pa, 20) ^
-           get_bit(pa, 19) ^ get_bit(pa, 17);
-  int h1 = get_bit(pa, 31) ^ get_bit(pa, 30) ^ get_bit(pa, 29) ^
-           get_bit(pa, 27) ^ get_bit(pa, 25) ^ get_bit(pa, 23) ^
-           get_bit(pa, 21) ^ get_bit(pa, 19) ^ get_bit(pa, 18);
+
+  /* Practical Timing Side Channel Attacks Against Kernel Space ASLR */
+  // int h2 = get_bit(pa, 31) ^ get_bit(pa, 29) ^ get_bit(pa, 28) ^
+  //          get_bit(pa, 26) ^ get_bit(pa, 24) ^ get_bit(pa, 23) ^
+  //          get_bit(pa, 22) ^ get_bit(pa, 21) ^ get_bit(pa, 20) ^
+  //          get_bit(pa, 19) ^ get_bit(pa, 17);
+  // int h1 = get_bit(pa, 31) ^ get_bit(pa, 30) ^ get_bit(pa, 29) ^
+  //          get_bit(pa, 27) ^ get_bit(pa, 25) ^ get_bit(pa, 23) ^
+  //          get_bit(pa, 21) ^ get_bit(pa, 19) ^ get_bit(pa, 18);
+
+  /* Reverse Engineering Intel Last-Level Cache Complex Addressing Using
+   * Performance Counters */
+
+  int h1 = get_bit(pa, 33) ^ get_bit(pa, 32) ^ get_bit(pa, 30) ^
+           get_bit(pa, 28) ^ get_bit(pa, 27) ^ get_bit(pa, 26) ^
+           get_bit(pa, 25) ^ get_bit(pa, 24) ^ get_bit(pa, 22) ^
+           get_bit(pa, 20) ^ get_bit(pa, 18) ^ get_bit(pa, 17) ^
+           get_bit(pa, 16) ^ get_bit(pa, 14) ^ get_bit(pa, 12) ^
+           get_bit(pa, 10) ^ get_bit(pa, 6);
+  int h2 = get_bit(pa, 34) ^ get_bit(pa, 33) ^ get_bit(pa, 31) ^
+           get_bit(pa, 29) ^ get_bit(pa, 28) ^ get_bit(pa, 26) ^
+           get_bit(pa, 24) ^ get_bit(pa, 23) ^ get_bit(pa, 22) ^
+           get_bit(pa, 21) ^ get_bit(pa, 20) ^ get_bit(pa, 19) ^
+           get_bit(pa, 17) ^ get_bit(pa, 15) ^ get_bit(pa, 13) ^
+           get_bit(pa, 11) ^ get_bit(pa, 7);
+
   return (h1 << 1) + h2;
 }
 
@@ -943,32 +962,20 @@ void get_eviction_set_from_slices(uintptr_t target_pa, int associativity,
   int target_slice = get_i7_2600_slice(target_pa);
   printf("target_set: %d, target_slice: %d\n", target_set, target_slice);
 
-  *cl_set_ptr = new_cl_set();
-  int llc_elem_index = 0;
-  while ((*cl_set_ptr)->size < associativity && llc_elem_index < 128) {
-    /* allocate address aligned with half cache set bc aligned alloc returns
-    va
-     */
-    volatile CacheLine *line =
-        (volatile CacheLine *)(*eviction_mapping_start +
-                               (target_set << LINE_OFFSET_BITS) +
-                               ((1 << EVERGLADES_CACHE_SET_BITS)
-                                << LINE_OFFSET_BITS) *
-                                   llc_elem_index);
+  *cl_set_ptr = hugepage_inflate(*eviction_mapping_start,
+                                 EVERGLADES_ASSOCIATIVITY, target_set);
 
-    *line; // bring the large page into physical memory
-    uintptr_t pa = 0;
-    virt_to_phys_huge_page(&pa, (uintptr_t)line);
+  int threshold = threshold_from_flush(*eviction_mapping_start);
 
-    int slice = get_i7_2600_slice(pa);
-    int set = pa_to_set((uintptr_t)pa, EVERGLADES);
-
-    if (set == target_set && slice == target_slice) {
-      printf("found address %p, pa: %p, index: %d, set: %d, slice : %d\n", line,
-             (void *)pa, llc_elem_index, set, slice);
-      push_cache_line(*cl_set_ptr, (CacheLine *)line);
+  for (int i = 0; i < EVERGLADES_ASSOCIATIVITY; i++) {
+    uintptr_t *paddr;
+    uintptr_t vaddr = (uintptr_t)((*cl_set_ptr)->cache_lines[i]);
+    virt_to_phys_huge_page(paddr, vaddr);
+    if (get_i7_2600_slice(*paddr) == target_slice) {
+      if (get_minimal_set((uint8_t *)vaddr, cl_set_ptr, threshold)) {
+        break;
+      }
     }
-    llc_elem_index++;
   }
 }
 
@@ -1023,8 +1030,13 @@ EvictionSet **get_all_slices_eviction_sets(void *mmap_start, int set) {
     NumList *nl = new_num_list(EVERGLADES_ASSOCIATIVITY);
     int size = 0;
     for (int j = i + 1; j < cl_set->size; j++) {
-      int time = evict_and_time_once(es, (uint8_t *)cl_set->cache_lines[j]);
-      if (time < threshold) {
+      int count = 0;
+      for (int k = 0; k < 10; k++) {
+        int time = evict_and_time_once(es, (uint8_t *)cl_set->cache_lines[j]);
+        if (time < threshold)
+          count++;
+      }
+      if (count > 6) {
         push_num(nl, j);
         size++;
       }

@@ -42,6 +42,8 @@ sudo ./bin/test.out
 
 # Critical 
 1. Overlapping bits modified to 12 for huge pages instead of 6 in regualr pages
+2. Hugepages are used
+3. isolcpus, nohz_full, and cpuset is set on cpu 0 on Everglades
 
 # Huge Pages
 

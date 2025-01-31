@@ -11,7 +11,7 @@
 #include "../lib/constants.h"
 #include "../lib/eviction.h"
 
-#define TRANSMIT_INTERVAL 5500
+#define TRANSMIT_INTERVAL 6000
 
 uint8_t *target;
 

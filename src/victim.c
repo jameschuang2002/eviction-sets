@@ -47,6 +47,8 @@ int main() {
 
   volatile uint8_t tmp = *(volatile uint8_t *)mapping_start;
 
+  printf("%d\n", get_i7_2600_slice(KBD_KEYCODE_ADDR));
+
   for (int i = 0; i < 100; i++) {
 
     tmp = *(volatile uint8_t *)cl_set->cache_lines[0];

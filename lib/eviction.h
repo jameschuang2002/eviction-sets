@@ -29,7 +29,7 @@
 
 // How many bits [6,10] to match between the victim cache set and the cache set
 // of new cache lines
-#define MATCHING_BITS 11 // 6 for regular pages
+#define MATCHING_BITS 6
 
 /*********************************************************************
  * Address Translation
@@ -125,10 +125,11 @@ int which_set(NumList **results, NumList *known_trace);
 Last-Level Cache Complex Addressing
 Using Performance Counters */
 int get_i7_2600_slice(uintptr_t pa);
-void get_eviction_set_from_slices(uintptr_t target_pa, int associativity,
-                                  void **eviction_mapping_start,
-                                  CacheLineSet **cl_set_ptr);
-void probe(EvictionSet *es, NumList *access_times);
+EvictionSet *get_eviction_set_from_slices(uintptr_t target_pa,
+                                          int associativity,
+                                          void **eviction_mapping_start,
+                                          CacheLineSet **cl_set_ptr);
+void probe(EvictionSet *es, int *access_times);
 CacheLineSet *hugepage_inflate(void *mmap_start, int size, int set);
 EvictionSet **get_all_slices_eviction_sets(void *mmap_start, int set);
 

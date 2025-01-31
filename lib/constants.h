@@ -7,7 +7,7 @@
 #define CACHE_LINE_BYTES (1 << LINE_OFFSET_BITS)
 #define HUGE_PAGE_OFFSET_BITS 21
 #define HUGE_PAGE_BYTES (1 << HUGE_PAGE_OFFSET_BITS)
-
+#define KBD_KEYCODE_ADDR 0x716220106b20
 /*********************************************************************
  * Machine Constants
  *********************************************************************/

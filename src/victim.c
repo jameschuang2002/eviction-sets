@@ -1,10 +1,17 @@
+#define _DEFAULT_SOURCE
+
+#include <sched.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #include <x86intrin.h>
 
+#include "../lib/constants.h"
 #include "../lib/eviction.h"
+
+#define TRANSMIT_INTERVAL 5500
 
 uint8_t *target;
 
@@ -36,9 +43,31 @@ int main() {
                              MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
   printf("%p\n", (void *)mapping_start);
 
-  while (1) {
-    volatile uint8_t tmp =
-        *(volatile uint8_t *)(mapping_start + (31 << LINE_OFFSET_BITS));
+  CacheLineSet *cl_set = hugepage_inflate(mapping_start, 16, 428);
+
+  volatile uint8_t tmp = *(volatile uint8_t *)mapping_start;
+
+  for (int i = 0; i < 100; i++) {
+
+    tmp = *(volatile uint8_t *)cl_set->cache_lines[0];
+
+    uint64_t start = __rdtscp(&core_id);
+    while (__rdtscp(&core_id) - start < 100000)
+      sched_yield();
+
+    uint64_t access_time =
+        time_load((volatile uint8_t *)cl_set->cache_lines[0]);
+    printf("access_time: %lu\n", access_time);
   }
-  return 0;
+
+  uint64_t start_time = 0;
+  while (1) {
+    start_time = __rdtscp(&core_id);
+    while (__rdtscp(&core_id) - start_time < TRANSMIT_INTERVAL)
+      tmp = *(volatile uint8_t *)cl_set->cache_lines[0];
+    start_time = __rdtscp(&core_id);
+    // wait for 100 ms
+    while (__rdtscp(&core_id) - start_time < 40000)
+      ;
+  }
 }

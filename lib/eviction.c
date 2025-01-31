@@ -954,9 +954,10 @@ CacheLineSet **generate_sets(int num_sets, uint8_t *victim_page_offset) {
   return probe_sets;
 }
 
-void get_eviction_set_from_slices(uintptr_t target_pa, int associativity,
-                                  void **eviction_mapping_start,
-                                  CacheLineSet **cl_set_ptr) {
+EvictionSet *get_eviction_set_from_slices(uintptr_t target_pa,
+                                          int associativity,
+                                          void **eviction_mapping_start,
+                                          CacheLineSet **cl_set_ptr) {
   printf("target_pa: %p\n", (void *)target_pa);
   int target_set = pa_to_set(target_pa, EVERGLADES);
   int target_slice = get_i7_2600_slice(target_pa);
@@ -968,22 +969,26 @@ void get_eviction_set_from_slices(uintptr_t target_pa, int associativity,
   int threshold = threshold_from_flush(*eviction_mapping_start);
 
   for (int i = 0; i < EVERGLADES_ASSOCIATIVITY; i++) {
-    uintptr_t *paddr;
+    uintptr_t paddr;
     uintptr_t vaddr = (uintptr_t)((*cl_set_ptr)->cache_lines[i]);
-    virt_to_phys_huge_page(paddr, vaddr);
-    if (get_i7_2600_slice(*paddr) == target_slice) {
+    virt_to_phys_huge_page(&paddr, vaddr);
+    if (get_i7_2600_slice(paddr) == target_slice) {
+      remove_cache_line(*cl_set_ptr, i);
       if (get_minimal_set((uint8_t *)vaddr, cl_set_ptr, threshold)) {
         break;
       }
     }
   }
+  print_cl_set(*cl_set_ptr);
+  EvictionSet *es = new_eviction_set(*cl_set_ptr);
+  return es;
 }
 
-void probe(EvictionSet *es, NumList *access_times) {
+void probe(EvictionSet *es, int *access_times) {
   CacheLine *iter = es->head;
   for (int i = 0; i < es->size; i++) {
     uint64_t time = time_load((uint8_t *)iter);
-    push_num(access_times, time);
+    access_times[i] = time;
     iter = iter->next;
   }
 }

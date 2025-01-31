@@ -1,6 +1,8 @@
 #include "constants.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <x86intrin.h>
 
 #ifndef UTILS_H
@@ -59,6 +61,7 @@ int compare_nums(const void *a, const void *b);
 uint64_t min(NumList *nl);
 uint64_t max(NumList *nl);
 uint64_t mean(NumList *nl);
+uint64_t has_greater_than(NumList *nl, int threshold);
 uint64_t median_and_sort(NumList *nl);
 uint64_t print_stats(NumList *nl);
 
@@ -88,5 +91,10 @@ uint64_t time_access(volatile uint8_t *ptr, size_t index);
 
 /* Helper function for getting the n'th bit of value, 0-indexed */
 int get_bit(uint64_t value, int n);
+
+/*********************************************************************
+ * Signal Safe Functions
+ *********************************************************************/
+void safe_print(char *msg);
 
 #endif

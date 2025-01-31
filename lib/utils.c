@@ -151,6 +151,14 @@ uint64_t mean(NumList *nl) {
   return sum /= nl->length;
 }
 
+uint64_t has_greater_than(NumList *nl, int threshold) {
+  for (int i = 0; i < nl->length; i++) {
+    if (nl->nums[i] > threshold)
+      return 1;
+  }
+  return 0;
+}
+
 uint64_t print_stats(NumList *nl) {
   uint64_t median = median_and_sort(nl);
   double mean = 0;
@@ -186,3 +194,4 @@ uint64_t print_stats(NumList *nl) {
 }
 
 int get_bit(uint64_t value, int n) { return (value >> n) & 0x1; }
+void safe_print(char *msg) { write(STDOUT_FILENO, msg, sizeof(msg) - 1); }

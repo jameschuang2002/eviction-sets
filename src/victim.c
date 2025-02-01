@@ -10,6 +10,7 @@
 
 #include "../lib/constants.h"
 #include "../lib/eviction.h"
+#include "../lib/l3pp.h"
 
 #define TRANSMIT_INTERVAL 6000
 
@@ -65,15 +66,15 @@ int main() {
   uint64_t start_time = 0;
   while (1) {
     start_time = __rdtscp(&core_id);
-    while (__rdtscp(&core_id) - start_time < TRANSMIT_INTERVAL)
-      tmp = *(volatile uint8_t *)cl_set->cache_lines[0];
+    // while (__rdtscp(&core_id) - start_time < TRANSMIT_INTERVAL)
+    tmp = *(volatile uint8_t *)cl_set->cache_lines[0];
     start_time = __rdtscp(&core_id);
     // wait for 100 ms
     while (__rdtscp(&core_id) - start_time < 40000)
       ;
     start_time = __rdtscp(&core_id);
-    while (__rdtscp(&core_id) - start_time < TRANSMIT_INTERVAL)
-      tmp = *(volatile uint8_t *)cl_set->cache_lines[0];
+    // while (__rdtscp(&core_id) - start_time < TRANSMIT_INTERVAL)
+    tmp = *(volatile uint8_t *)cl_set->cache_lines[0];
     start_time = __rdtscp(&core_id);
     // wait for 100 ms
     while (__rdtscp(&core_id) - start_time < 80000)

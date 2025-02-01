@@ -31,3 +31,8 @@
 #define EVERGLADES_NUM_SLICES 4
 #define EVERGLADES_SETS_PER_SLICE 2048
 #define EVERGLADES_LLC_SIZE 8 * 1024 * 1024
+
+/*********************************************************************
+ * Prime+Probe
+ *********************************************************************/
+#define WAIT_INTERVAL 100000

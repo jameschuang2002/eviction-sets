@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 
-#include "utils.h"
+#include "../lib/utils.h"
 
 /*********************************************************************
  * Ranges and Number Lists

@@ -117,22 +117,4 @@ CacheLineSet **generate_sets(int num_sets, uint8_t *victim_page_offset);
 NumList *do_probe(CacheLineSet *cl_set, uint64_t probe_time);
 int which_set(NumList **results, NumList *known_trace);
 
-/*********************************************************************
- * Slicing Function and Slicing Helper Functions
- *********************************************************************/
-
-/* slicing function from Clementine Maurice 2015 Reverse Engineering Intel
-Last-Level Cache Complex Addressing
-Using Performance Counters */
-int get_i7_2600_slice(uintptr_t pa);
-EvictionSet *get_eviction_set_from_slices(uintptr_t target_pa,
-                                          int associativity,
-                                          void **eviction_mapping_start,
-                                          CacheLineSet **cl_set_ptr);
-void probe(EvictionSet *es, int *access_times);
-CacheLineSet *hugepage_inflate(void *mmap_start, int size, int set);
-EvictionSet **get_all_slices_eviction_sets(void *mmap_start, int set);
-
-void free_es_list(EvictionSet **es_list);
-
 #endif

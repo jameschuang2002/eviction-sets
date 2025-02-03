@@ -16,7 +16,7 @@ void prime_probe_once(EvictionSet *es, int *times) {
   unsigned int core_id = 0;
   CacheLine *iter = es->head;
   for (int i = 0; i < es->size; i++) {
-    volatile uint8_t tmp = *(volatile uint8_t *)iter;
+    iter = iter->next;
   }
   // access_set(es);
   int start = __rdtscp(&core_id);

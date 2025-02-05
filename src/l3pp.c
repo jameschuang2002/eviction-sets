@@ -3,26 +3,16 @@
 #include "../lib/eviction.h"
 #include <stdio.h>
 
-void probe(EvictionSet *es, int *access_times) {
+uint8_t probe(EvictionSet *es, int threshold) {
   CacheLine *iter = es->head;
   for (int i = 0; i < es->size; i++) {
     uint64_t time = time_load((uint8_t *)iter);
-    access_times[i] = time;
+    if (time > threshold) {
+      return 1;
+    }
     iter = iter->next;
   }
-}
-
-void prime_probe_once(EvictionSet *es, int *times) {
-  unsigned int core_id = 0;
-  CacheLine *iter = es->head;
-  for (int i = 0; i < es->size; i++) {
-    iter = iter->next;
-  }
-  // access_set(es);
-  int start = __rdtscp(&core_id);
-  while (__rdtscp(&core_id) - start < WAIT_INTERVAL)
-    ;
-  probe(es, times);
+  return 0;
 }
 
 void prime_probe(EvictionSet *es, uint8_t associativity, uint8_t *hit_times,
@@ -39,24 +29,25 @@ void prime_probe(EvictionSet *es, uint8_t associativity, uint8_t *hit_times,
   }
 
   *start_time = __rdtscp(&core_id);
+  access_set(es);
   for (int i = 0; i < numBytes;
        i++) { // TODO: numBytes * 8 to store data efficiently
-    prime_probe_once(es, times);
-    for (int j = 0; j < associativity; j++) {
-      if (times[j] > threshold) {
-        hit_times[i] = 1;
-        break;
-      }
-    }
+    hit_times[i] = probe(es, threshold);
   }
 }
 
 void print_probe_result(uint8_t *results, uint64_t numBytes, uint64_t width,
                         uint64_t height) {
-  // TODO: Print based on the compacted representation of output
+  int prev = 0;
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
-      printf("%d", results[numBytes - width * height + i * width + j]);
+      int value = results[numBytes - width * height + i * width + j];
+      if (prev == 1 && value == 1) {
+        printf("0");
+      } else {
+        printf("%d", value);
+      }
+      prev = value;
     }
     printf("\n");
   }

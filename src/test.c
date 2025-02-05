@@ -101,11 +101,11 @@ void test_eviction_and_pp(void) {
   access_set(es);
   volatile uint8_t tmp = *target;
   int list[16];
-  probe(es, list);
+  probe(es, threshold);
 
   sleep(1);
   access_set(es);
-  probe(es, list);
+  probe(es, threshold);
 
   free(target);
   deep_free_es(es);
@@ -132,16 +132,14 @@ void test_find_all_eviction_sets(int set) {
   }
 }
 
-int get_eslist_index_for_target(uintptr_t target) {
+int get_evset_index(int slice) {
   int ret = -1;
   for (int i = 0; i < 4; i++) {
     CacheLine *iter = es_list[i]->head;
-    printf("%d ", get_i7_2600_slice(pointer_to_pa((void *)iter)));
-    if (2 == get_i7_2600_slice(pointer_to_pa((void *)iter))) {
+    if (slice == get_i7_2600_slice(pointer_to_pa((void *)iter))) {
       ret = i;
     }
   }
-  printf("\n");
   return ret;
 }
 
@@ -172,6 +170,18 @@ int profile_slices(int set) {
     }
   }
   return max_slice_index;
+}
+
+void measure_keystroke() {
+  int set = pa_to_set(KBD_KEYCODE_ADDR, EVERGLADES);
+  int slice = get_i7_2600_slice(KBD_KEYCODE_ADDR);
+  int eslist_index = get_evset_index(slice);
+  while (1) {
+    uint8_t probemap[1024 * 1024];
+    uint64_t start;
+    prime_probe(es_list[eslist_index], EVERGLADES_ASSOCIATIVITY, probemap,
+                1024 * 1024, &start);
+  }
 }
 
 int main() {

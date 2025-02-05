@@ -1,6 +1,5 @@
 #include "eviction.h"
-void prime_probe_once(EvictionSet *es, int *times);
-
+uint8_t probe(EvictionSet *es, int threshold);
 /**
  * Prime+Probe until the buffer hit_times is completely filled
  * @param es: eviction set to probe
@@ -42,7 +41,6 @@ void print_probe_result(uint8_t *results, uint64_t numBytes, uint64_t width,
 Last-Level Cache Complex Addressing
 Using Performance Counters */
 int get_i7_2600_slice(uintptr_t pa);
-void probe(EvictionSet *es, int *access_times);
 CacheLineSet *hugepage_inflate(void *mmap_start, int size, int set);
 EvictionSet **get_all_slices_eviction_sets(void *mmap_start, int set);
 

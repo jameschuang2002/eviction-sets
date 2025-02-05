@@ -36,3 +36,4 @@
  * Prime+Probe
  *********************************************************************/
 #define WAIT_INTERVAL 10000
+#define BITS_PER_BYTE 8

@@ -1,5 +1,4 @@
 #define _DEFAULT_SOURCE
-
 #include <sched.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -55,12 +54,12 @@ int main() {
   while (1) {
     tmp = *(volatile uint8_t *)cl_set->cache_lines[0];
     start_time = __rdtscp(&core_id);
-    while (__rdtscp(&core_id) - start_time < 40000)
+    while (__rdtscp(&core_id) - start_time < 20000)
       ;
 
     tmp = *(volatile uint8_t *)cl_set->cache_lines[0];
     start_time = __rdtscp(&core_id);
-    while (__rdtscp(&core_id) - start_time < 80000)
+    while (__rdtscp(&core_id) - start_time < 40000)
       ;
   }
 }

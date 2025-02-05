@@ -152,12 +152,9 @@ int profile_slices(int set) {
   for (int i = 0; i < 4; i++) {
     int slice = get_i7_2600_slice(pointer_to_pa((void *)es_list[i]->head));
     printf("testing slice index: %d\n", slice);
-    sleep(1);
     uint64_t start_time;
     prime_probe(es_list[i], EVERGLADES_ASSOCIATIVITY, hit_times, 1024 * 1024,
                 &start_time);
-    slice_hit_count[i] = get_slice_hit_count(hit_times, 1024 * 1024, 64, 64);
-    printf("%lu, %d\n", start_time, slice_hit_count[slice]);
     print_probe_result(hit_times, 1024 * 1024, 64, 64);
   }
 

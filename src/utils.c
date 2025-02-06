@@ -195,3 +195,14 @@ uint64_t print_stats(NumList *nl) {
 
 int get_bit(uint64_t value, int n) { return (value >> n) & 0x1; }
 void safe_print(char *msg) { write(STDOUT_FILENO, msg, sizeof(msg) - 1); }
+
+void read_binary(const char *filename, uint64_t *array, size_t size) {
+  FILE *f = fopen(filename, "rb");
+  if (!f) {
+    perror("fopen failed");
+    exit(1);
+  }
+
+  fread(array, sizeof(uint64_t), size, f);
+  fclose(f);
+}

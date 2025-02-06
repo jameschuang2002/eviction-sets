@@ -7,10 +7,13 @@ uint8_t probe(EvictionSet *es, int threshold);
  * @param numBytes: the number of bytes in array hit_times
  * @return hit_times: a list of output, detected hits of target denoted as 1,
  * misses denoted as 0
- * @return start_time: pointer that points to value of start_time
+ * @return detect_timestamps: a list of rdtscp timestamps from prime+probe
+ * @return size: the size of timestamps array
+ * detections
  */
 void prime_probe(EvictionSet *es, uint8_t associativity, uint8_t *hit_times,
-                 uint64_t numBytes, uint64_t *start_time);
+                 uint64_t numBytes, uint64_t *detect_timestamps,
+                 uint64_t *size);
 
 /**
  * Return the hit count for the given trace at the last width * height addresses
@@ -23,6 +26,8 @@ void prime_probe(EvictionSet *es, uint8_t associativity, uint8_t *hit_times,
  */
 uint16_t get_slice_hit_count(uint8_t *results, uint64_t numBytes,
                              uint64_t width, uint64_t height);
+
+void filter_pp_results(uint8_t *results, uint64_t numBytes);
 /**
  * Print the last width * height outputs from results
  * @param results: the traces of prime+probe
@@ -33,6 +38,7 @@ uint16_t get_slice_hit_count(uint8_t *results, uint64_t numBytes,
 void print_probe_result(uint8_t *results, uint64_t numBytes, uint64_t width,
                         uint64_t height);
 
+void flush_timestamps(uint64_t *timestamps, int size, char *filePath);
 /*********************************************************************
  * Slicing Function and Slicing Helper Functions
  *********************************************************************/

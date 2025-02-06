@@ -16,7 +16,9 @@ uint8_t probe(EvictionSet *es, int threshold) {
 }
 
 void prime_probe(EvictionSet *es, uint8_t associativity, uint8_t *hit_times,
-                 uint64_t numBytes, uint64_t *start_time) {
+                 uint64_t numBytes, uint64_t *detect_timestamps,
+                 uint64_t *size) {
+  // TODO: numBytes * 8 to store data efficiently
   unsigned int core_id = 0;
   int threshold = threshold_from_flush((void *)es->head);
 
@@ -28,29 +30,53 @@ void prime_probe(EvictionSet *es, uint8_t associativity, uint8_t *hit_times,
     times[i] = 0;
   }
 
-  *start_time = __rdtscp(&core_id);
   access_set(es);
-  for (int i = 0; i < numBytes;
-       i++) { // TODO: numBytes * 8 to store data efficiently
+
+  int prev = 0;
+  uint64_t hit_count = 0;
+  for (int i = 0; i < numBytes; i++) {
     hit_times[i] = probe(es, threshold);
+    if (hit_times[i] == 1 && prev == 1) {
+      hit_times[i] = 0; // filtering out duplicate detections
+      prev = 1;
+    } else if (hit_times[i] == 1) {
+      detect_timestamps[hit_count] =
+          __rdtscp(&core_id); // get timestamp for the detection
+      hit_count++;
+      prev = 1;
+    } else {
+      prev = 0;
+    }
+  }
+  *size = hit_count;
+}
+
+void filter_pp_results(uint8_t *results, uint64_t numBytes) {
+  int prev = 0;
+  for (int i = 0; i < numBytes; i++) {
+    if (prev == 1 && results[i] == 1) {
+      prev = 1;
+      results[i] = 0;
+    } else {
+      prev = results[i];
+    }
   }
 }
 
 void print_probe_result(uint8_t *results, uint64_t numBytes, uint64_t width,
                         uint64_t height) {
-  int prev = 0;
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
-      int value = results[numBytes - width * height + i * width + j];
-      if (prev == 1 && value == 1) {
-        printf("0");
-      } else {
-        printf("%d", value);
-      }
-      prev = value;
+      printf("%d", results[numBytes - width * height + i * width + j]);
     }
     printf("\n");
   }
+}
+
+void flush_timestamps(uint64_t *timestamps, int size, char *filePath) {
+  FILE *file = fopen(filePath, "wb");
+  fwrite(timestamps, sizeof(uint64_t), size, file);
+  fclose(file);
 }
 
 uint16_t get_slice_hit_count(uint8_t *results, uint64_t numBytes,

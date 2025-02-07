@@ -197,6 +197,7 @@ int main() {
   // free(timestamp_sizes);
   es_list = get_all_slices_eviction_sets(mapping_start, 428);
   uint64_t start_time = __rdtscp(&core_id);
+  printf("measure start-time: %lu\n", start_time);
   measure_keystroke();
   printf("%llu\n", __rdtscp(&core_id) - start_time);
   return 0;

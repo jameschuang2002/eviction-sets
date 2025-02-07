@@ -1,33 +1,22 @@
-import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 
-def plot_histogram(csv_file, deduction_value):
-    # Load CSV
-    df = pd.read_csv(csv_file, header=None)
-    numbers = df[0] - deduction_value  # Deduct parameter
-    
-    numbers //= 100000000
-    # Normalize to start from 0
-    min_value = numbers.min()
-    numbers -= min_value
+def graph_bin(filename):
+    values = np.fromfile(filename, dtype=np.uint64) - 1872592970464309
+    CPU_FREQ = 3.4
+    values = (values / (3.4 * 1000000)).astype(int)
+    print(values[:10])
+    # plotting histogram with 10 ms intervals over 10s
+    slots = np.zeros(10000, dtype=int)
+    for v in values:
+        slots[v] = 1
 
-    # Get unique values
-    unique_numbers = sorted(numbers.unique())
+    plt.figure()
+    plt.bar(range(10000), slots, width=1, color="black")  # Binary visualization
+    plt.xlabel("Time Slot (10 ms intervals)")
+    plt.ylabel("Presence (1 = detected, 0 = not detected)")
+    plt.title("Binary Representation of Keystroke Timings")
+    plt.savefig("keystrokes.png")
 
-    # Create binary representation
-    max_value = unique_numbers[-1] if unique_numbers else 0
-    binary_representation = np.zeros(max_value + 1)
-    for num in unique_numbers:
-        binary_representation[num] = 1  # Mark listed numbers as 1
-
-    # Plot histogram
-    plt.bar(range(len(binary_representation)), binary_representation, color='blue')
-    plt.xlabel('Number')
-    plt.ylabel('Presence (1 for listed, 0 for unlisted)')
-    plt.title('Binary Histogram of Numbers')
-    plt.savefig('out.png')
-
-# Example usage
-plot_histogram('out1.csv', 1200476621398457)  # Replace 'numbers.csv' with your actual file name
-
+if __name__ == "__main__":
+    graph_bin("keystrokes.bin")

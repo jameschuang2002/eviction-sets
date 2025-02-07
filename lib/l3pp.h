@@ -12,8 +12,8 @@ uint8_t probe(EvictionSet *es, int threshold);
  * detections
  */
 void prime_probe(EvictionSet *es, uint8_t associativity, uint8_t *hit_times,
-                 uint64_t numBytes, uint64_t *detect_timestamps,
-                 uint64_t *size);
+                 uint64_t numBytes, uint64_t *detect_timestamps, uint64_t *size,
+                 int threshold);
 
 /**
  * Return the hit count for the given trace at the last width * height addresses
@@ -28,6 +28,7 @@ uint16_t get_slice_hit_count(uint8_t *results, uint64_t numBytes,
                              uint64_t width, uint64_t height);
 
 void filter_pp_results(uint8_t *results, uint64_t numBytes);
+
 /**
  * Print the last width * height outputs from results
  * @param results: the traces of prime+probe
@@ -39,6 +40,7 @@ void print_probe_result(uint8_t *results, uint64_t numBytes, uint64_t width,
                         uint64_t height);
 
 void flush_timestamps(uint64_t *timestamps, int size, char *filePath);
+
 /*********************************************************************
  * Slicing Function and Slicing Helper Functions
  *********************************************************************/

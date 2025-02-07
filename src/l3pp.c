@@ -16,11 +16,10 @@ uint8_t probe(EvictionSet *es, int threshold) {
 }
 
 void prime_probe(EvictionSet *es, uint8_t associativity, uint8_t *hit_times,
-                 uint64_t numBytes, uint64_t *detect_timestamps,
-                 uint64_t *size) {
+                 uint64_t numBytes, uint64_t *detect_timestamps, uint64_t *size,
+                 int threshold) {
   // TODO: numBytes * 8 to store data efficiently
   unsigned int core_id = 0;
-  int threshold = threshold_from_flush((void *)es->head);
 
   int times[associativity];
   for (int i = 0; i < numBytes; i++)
@@ -74,8 +73,9 @@ void print_probe_result(uint8_t *results, uint64_t numBytes, uint64_t width,
 }
 
 void flush_timestamps(uint64_t *timestamps, int size, char *filePath) {
-  FILE *file = fopen(filePath, "wb");
+  FILE *file = fopen(filePath, "ab");
   fwrite(timestamps, sizeof(uint64_t), size, file);
+  fflush(file);
   fclose(file);
 }
 

